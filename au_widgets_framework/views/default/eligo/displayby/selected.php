@@ -40,7 +40,8 @@ foreach($objects as $object){
   echo ">{$title}</option>";
 }
 echo '</select>';
-
+// debug select options
+//echo "<pre>" . print_r($options, 1) . "</pre>";
 
 // add in our sorting controls for the select
 // ajax variables take precedence, then saved settings, then default

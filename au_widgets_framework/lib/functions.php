@@ -15,11 +15,11 @@ function eligo_get_display_entities_options($widget){
   
   // eligo_type set for individual widgets = object subtype
   // this will limit the search to just our type
-  if(!empty($widget->eligo_type)){
+  if($widget->eligo_type !== NULL){
     $options['types'] = array($widget->eligo_type);
   }
   
-  if(!empty($widget->eligo_subtype)){
+  if($widget->eligo_subtype !== NULL){
     $options['subtypes'] = array($widget->eligo_subtype);
   }
   
@@ -49,11 +49,11 @@ function eligo_get_display_entities_options($widget){
     break;
   }
   
+  // add in owner options
+  $options = eligo_get_owner_options($widget, $widget->eligo_owners, $options);
   
-  $owner_options = eligo_get_owner_options($widget, $widget->eligo_owners);
-  
-  $options = array_merge($options, $owner_options);
-  
+  // add in tag filtering options
+  $options = eligo_get_tag_filter_options($widget, array('eligo_tagfilter' => $widget->eligo_tagfilter, 'eligo_tagfilter_andor' => $widget->eligo_tagfilter_andor), $options);
   
   // set up options for sorting
   switch ($widget->eligo_sortby) {
@@ -66,7 +66,7 @@ function eligo_get_display_entities_options($widget){
         $title = 'name';
       }
       $join = "JOIN " . elgg_get_config('dbprefix') . $table . " o ON o.guid = e.guid";
-      $options['joins'] = array($join);
+      $options['joins'] = eligo_options_array_merge($options['joins'], array($join));
       
       $options['order_by'] = "o.{$title} ASC";
       if($widget->eligo_sortby_dir == 'desc'){
@@ -77,7 +77,7 @@ function eligo_get_display_entities_options($widget){
     case 'owner':
       // join user table to sort by owner name
       $join = "JOIN " . elgg_get_config('dbprefix') . "users_entity u ON u.guid = e.owner_guid";
-      $options['joins'] = array($join);
+      $options['joins'] = eligo_options_array_merge($options['joins'], array($join));
       
       $options['order_by'] = 'u.name ASC';
       if($widget->eligo_sortby_dir == 'desc'){
@@ -129,10 +129,26 @@ function eligo_get_selected_entities_options($vars){
   if(!$owners){
     $owners = $widget->eligo_owners ? $widget->eligo_owners : 'mine';
   }
-
-  $owner_options = eligo_get_owner_options($widget, $owners);
   
-  $options = array_merge($options, $owner_options);
+  // get owner options
+  // pass $options by reference
+  $options = eligo_get_owner_options($widget, $owners, $options);
+  
+  
+  // get based on tags
+  // priority goes to $vars as it's ajax populated, then saved $widget
+  $tags = $vars['eligo_tagfilter'] ? $vars['eligo_tagfilter'] : FALSE;
+  if(!$tags){
+    $tags = $widget->eligo_tagfilter ? $widget->eligo_tagfilter : '';
+  }
+  
+  $andor = $vars['eligo_tagfilter_andor'] ? $vars['eligo_tagfilter_andor'] : FALSE;
+  if(!$andor){
+    $andor = $widget->eligo_tagfilter_andor ? $widget->eligo_tagfilter_andor : 'and';
+  }
+  
+  $options = eligo_get_tag_filter_options($widget, array('eligo_tagfilter' => $tags, 'eligo_tagfilter_andor' => $andor), $options);
+   
   
   // determine sort-by
   $sort = $vars['eligo_select_sort'] ? $vars['eligo_select_sort'] : FALSE;
@@ -143,12 +159,20 @@ function eligo_get_selected_entities_options($vars){
     case "name":
       // join to objects_entity table to sort by title in sql      
       $join = "JOIN " . elgg_get_config('dbprefix') . "objects_entity o ON o.guid = e.guid";
-      $options['joins'] = array($join);
-      $options['order_by'] = 'o.title ASC';
+      
+      $options['joins'] = eligo_options_array_merge($options['joins'], array($join));
+      
+      if(!empty($options['order_by'])){
+        $options['order_by'] .= ", ";
+      }
+      $options['order_by'] .= 'o.title ASC';
       break;
       
     case "access":
-      $options['order_by'] = "e.access_id ASC";
+      if(!empty($options['order_by'])){
+        $options['order_by'] .= ", ";
+      }
+      $options['order_by'] .= "e.access_id ASC";
       break;
     
     case "date":
@@ -160,11 +184,7 @@ function eligo_get_selected_entities_options($vars){
   // let widgets override defaults in a custom callback function
   // called at the end in case only one small part needs to change
   if($widget->eligo_custom_select_options && is_callable($widget->eligo_custom_select_options)){
-  	$selected_options = call_user_func($widget->eligo_custom_select_options, $widget, $vars);
-  	
-  	if(is_array($selected_options)){
-  	  $options = array_merge($options, $selected_options);
-  	}
+  	$options = call_user_func($widget->eligo_custom_select_options, $widget, $vars, $options);
   }
   
   return $options;
@@ -178,15 +198,16 @@ function eligo_get_selected_entities_options($vars){
  * @param String $owners
  * @return array $options
  */
-function eligo_get_owner_options($widget, $owners){
+function eligo_get_owner_options($widget, $owners, $options){
+    if(!is_array($options)){
+      $options = array();
+    }
   
 	// if a widget has requirements beyond the default
 	// they can define their own owner options
 	if($widget->eligo_custom_owners_options && is_callable($widget->eligo_custom_owners_options)){
-		return call_user_func($widget->eligo_custom_owners_options, $widget, $owners);
+		return call_user_func($widget->eligo_custom_owners_options, $widget, $owners, $options);
 	}
-	
-  $options = array();
   
   // set defaults based on context
   // yes I know they do the same thing at the moment
@@ -252,7 +273,6 @@ function eligo_get_owner_options($widget, $owners){
     
     case 'all':
       // any owner - used for group membership as we don't care who
-      // the group owner is generally
     break;
     
     case 'thisgroup':
@@ -265,6 +285,120 @@ function eligo_get_owner_options($widget, $owners){
   return $options;
 }
 
+//
+//  set up options to filter by tag
+//  $options passed by reference
+function eligo_get_tag_filter_options($widget, $vars, $options){
+  global $CONFIG;
+  
+  $tags = $vars['eligo_tagfilter'];
+  $andor = $vars['eligo_tagfilter_andor'];
+  
+  if(empty($tags)){
+    return $options;
+  }
+  
+  
+    $wheres = array();
+    $joins = array();
+    // will always want to join these tables if pulling metastrings.
+	$joins[] = "JOIN {$CONFIG->dbprefix}metadata tagmd on e.guid = tagmd.entity_guid";
+
+	// get names wheres and joins
+	$names_where = '';
+	$values_where = '';
+	
+	$names = array("tags", "universal_categories");
+	$values = string_to_tag_array($tags);
+	
+	if(!empty($values)){
+		$sanitised_names = array();
+		foreach ($names as $name) {
+			// normalise to 0.
+			if (!$name) {
+				$name = '0';
+			}
+			$sanitised_names[] = '\'' . sanitise_string($name) . '\'';
+		}
+	
+		if ($names_str = implode(',', $sanitised_names)) {
+			$joins[] = "JOIN {$CONFIG->dbprefix}metastrings tagmsn on tagmd.name_id = tagmsn.id";
+			$names_where = "(tagmsn.string IN ($names_str))";
+		}
+		
+		$sanitised_values = array();
+		foreach ($values as $value) {
+			// normalize to 0
+			if (!$value) {
+				$value = 0;
+			}
+			$sanitised_values[] = '\'' . sanitise_string($value) . '\'';
+		}	
+		
+		$joins[] = "JOIN {$CONFIG->dbprefix}metastrings tagmsv on tagmd.value_id = tagmsv.id";
+		
+		$values_where .= "(";
+		foreach($sanitised_values as $i => $value){
+			if($i !== 0){
+				if($andor == "and"){
+					// AND
+					
+					$joins[] = "JOIN {$CONFIG->dbprefix}metadata tagmd{$i} on e.guid = tagmd{$i}.entity_guid";
+					$joins[] = "JOIN {$CONFIG->dbprefix}metastrings tagmsn{$i} on tagmd{$i}.name_id = tagmsn{$i}.id";
+					$joins[] = "JOIN {$CONFIG->dbprefix}metastrings tagmsv{$i} on tagmd{$i}.value_id = tagmsv{$i}.id";
+	 
+					$values_where .= " AND (tagmsn{$i}.string IN ($names_str) AND tagmsv{$i}.string = $value)";
+				} else {
+					$values_where .= " OR (tagmsv.string = $value)";
+				}
+			} else {
+				$values_where .= "(tagmsv.string = $value)";
+			}				
+		}
+		$values_where .= ")";
+	}
+	
+	$access = get_access_sql_suffix('tagmd');
+	
+	if ($names_where && $values_where) {
+		$wheres[] = "($names_where AND $values_where AND $access)";
+	} elseif ($names_where) {
+		$wheres[] = "($names_where AND $access)";
+	} elseif ($values_where) {
+		$wheres[] = "($values_where AND $access)";
+	}
+
+  $options['joins'] = eligo_options_array_merge($options['joins'], $joins);
+  $options['wheres'] = eligo_options_array_merge($options['wheres'], $wheres);
+  
+  return $options;
+}
+
+
+
+//
+//  Takes an original array, adds a new one to it
+//  returns the merged arrays, retaining all options
+//  useful when you don't know what has been set previously if anything
+function eligo_options_array_merge($original = array(), $new = array()){
+  // if original isn't an array, it's either null, or a string that needs converting to array
+  if(empty($original)){
+    return $new;
+  }
+  
+  // treat it as a string
+  if(!is_array($original)){
+    $original = array($original);
+  }
+  
+  // normal scenario
+  if(is_array($original) && is_array($new)){
+    foreach($new as $item){
+      $original[] = $item;
+    }
+    return $original;
+  }
+}
 
 /**
  * 

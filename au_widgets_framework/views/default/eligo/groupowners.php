@@ -17,6 +17,7 @@ $options = array(
   'options_values' => array(
       'thisgroup' => elgg_echo('eligo:owners:thisgroup'),
       'members' => elgg_echo('eligo:owners:members'),
+      'all' => elgg_echo('eligo:owners:all')
     ),
 );
 

@@ -11,6 +11,7 @@ $english = array(
   'eligo:displayby:selected:label' => "Select items to display (ctrl + click for multiple).  Note that this option will cause the 'number of items to display' option to be ignored",
   'eligo:number:label' => "Number of items to display",
   'eligo:owners' => "Show items belonging to",
+  'eligo:owners:all' => "Anyone",
   'eligo:owners:friends' => "My Friends",
   'eligo:owners:groups' => "My Groups",
   'eligo:owners:members' => "Group Members",
@@ -25,6 +26,10 @@ $english = array(
   'eligo:sortby:title' => "Title",
   'eligo:sortbydir:asc' => "Ascending",
   'eligo:sortbydir:desc' => "Decending",
+  'eligo:tagfilter:and' => "AND",
+  'eligo:tagfilter_andor:label' => "How to use the tag(s)",
+  'eligo:tagfilter:label' => "Filter by tags (comma separated)",
+  'eligo:tagfilter:or' => "OR"
 );
 					
 add_translation("en",$english);

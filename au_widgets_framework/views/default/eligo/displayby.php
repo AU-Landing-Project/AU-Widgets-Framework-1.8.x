@@ -36,20 +36,33 @@ echo "</div>"; // eligo_field
 
 <script>
 $(document).ready( function(){
+
+	//
 	// always change for select dropdown
 	$("#eligo_displayby_select_<?php echo $widget->guid; ?>").change(function() {
 		eligo_update_selected(<?php echo $widget->guid; ?>);
 	});
 
-	// all other options only change if eligo_display == selected
-	$("#eligo_owners_<?php echo $widget->guid; ?>").change(function() {
+	// 
+	// all other selects only change if eligo_display == selected
+	$("#eligo_owners_<?php echo $widget->guid; ?>, #eligo_tagfilter_andor<?php echo $widget->guid; ?>").change(function() {
 		if($("#eligo_displayby_select_<?php echo $widget->guid; ?> option:selected").val() == 'selected'){
 			eligo_update_selected(<?php echo $widget->guid; ?>);
 		}
 	});
 
+	// radio buttons
 	// all other options only change if eligo_display == selected
 	$(".eligo_selectsort_<?php echo $widget->guid; ?> input[type=radio]").live('click', function() {
+		if($("#eligo_displayby_select_<?php echo $widget->guid; ?> option:selected").val() == 'selected'){
+			eligo_update_selected(<?php echo $widget->guid; ?>);
+		}
+	});
+
+
+	// text fields
+	// only change if eligo_display == selected
+	$("#eligo_tagfilter<?php echo $widget->guid; ?>").keyup(function() {
 		if($("#eligo_displayby_select_<?php echo $widget->guid; ?> option:selected").val() == 'selected'){
 			eligo_update_selected(<?php echo $widget->guid; ?>);
 		}
