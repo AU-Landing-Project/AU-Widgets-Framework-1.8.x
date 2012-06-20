@@ -1,0 +1,11 @@
+== Version History ==
+
+x.x:
+
+1.2 (06/20/2012):
+
+ - Fixes inheritance of number of results from old eligo widget
+
+1.1 (05/08/2012):
+
+ - Added support for tag filtering

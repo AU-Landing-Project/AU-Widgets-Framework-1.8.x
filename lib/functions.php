@@ -504,6 +504,12 @@ function eligo_upgrade_old_widget($widget){
     break;
   }
   
+  // normalize the number to display
+  // old eligo had 'All' keyword
+  if($widget->num_display == 'All'){
+    $widget->num_display = 30;
+  }
+  
   return $widget;
 }
 
