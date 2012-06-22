@@ -6,7 +6,7 @@
 
 $widget = $vars['entity'];
 if($widget->eligo_displayby == ''){
-  $widget->eligo_displayby = 'number';
+  $widget->eligo_displayby = 'recent';
 }
 
 echo '<div class="eligo_field">';
