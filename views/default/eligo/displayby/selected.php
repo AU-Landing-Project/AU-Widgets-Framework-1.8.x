@@ -14,7 +14,11 @@ $currently_selected = unserialize($widget->eligo_selected_entities);
 $options = eligo_get_selected_entities_options($vars);
 
 // get a list of our objects
-$objects = elgg_get_entities($options);
+if (!isset($options['metadata_names']) && !isset($options['metadata_name_value_pairs'])) {
+  $objects = elgg_get_entities($options);
+} else {
+  $objects = elgg_get_entities_from_metadata($options);
+}
 
 echo "<div class=\"eligo_field\">";
 

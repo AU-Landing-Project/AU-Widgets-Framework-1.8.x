@@ -2,6 +2,9 @@
 
 x.x:
 
+1.3 ():
+ - Removed 'and' functionality for tag searches due to performance issues
+
 1.2 (06/20/2012):
 
  - Fixes inheritance of number of results from old eligo widget

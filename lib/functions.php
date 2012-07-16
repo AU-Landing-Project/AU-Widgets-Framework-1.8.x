@@ -292,88 +292,30 @@ function eligo_get_tag_filter_options($widget, $vars, $options){
   global $CONFIG;
   
   $tags = $vars['eligo_tagfilter'];
-  $andor = $vars['eligo_tagfilter_andor'];
+  //$andor = $vars['eligo_tagfilter_andor'];
+  // note that with large amounts of data, an 'and' search joins the metadata/strings tables
+  // for each tag to search - can easily lock up the db.
+  // for now, removed the 'and' option
+  $andor = 'or';
   
   if(empty($tags)){
     return $options;
   }
-  
-  
-    $wheres = array();
-    $joins = array();
-    // will always want to join these tables if pulling metastrings.
-	$joins[] = "JOIN {$CONFIG->dbprefix}metadata tagmd on e.guid = tagmd.entity_guid";
 
-	// get names wheres and joins
-	$names_where = '';
-	$values_where = '';
-	
-	$names = array("tags", "universal_categories");
 	$values = string_to_tag_array($tags);
 	
-	if(!empty($values)){
-		$sanitised_names = array();
-		foreach ($names as $name) {
-			// normalise to 0.
-			if (!$name) {
-				$name = '0';
-			}
-			$sanitised_names[] = '\'' . sanitise_string($name) . '\'';
-		}
-	
-		if ($names_str = implode(',', $sanitised_names)) {
-			$joins[] = "JOIN {$CONFIG->dbprefix}metastrings tagmsn on tagmd.name_id = tagmsn.id";
-			$names_where = "(tagmsn.string IN ($names_str))";
-		}
-		
-		$sanitised_values = array();
-		foreach ($values as $value) {
-			// normalize to 0
-			if (!$value) {
-				$value = 0;
-			}
-			$sanitised_values[] = '\'' . sanitise_string($value) . '\'';
-		}	
-		
-		$joins[] = "JOIN {$CONFIG->dbprefix}metastrings tagmsv on tagmd.value_id = tagmsv.id";
-		
-		$values_where .= "(";
-		foreach($sanitised_values as $i => $value){
-			if($i !== 0){
-				if($andor == "and"){
-					// AND
-					
-					$joins[] = "JOIN {$CONFIG->dbprefix}metadata tagmd{$i} on e.guid = tagmd{$i}.entity_guid";
-					$joins[] = "JOIN {$CONFIG->dbprefix}metastrings tagmsn{$i} on tagmd{$i}.name_id = tagmsn{$i}.id";
-					$joins[] = "JOIN {$CONFIG->dbprefix}metastrings tagmsv{$i} on tagmd{$i}.value_id = tagmsv{$i}.id";
-	 
-					$values_where .= " AND (tagmsn{$i}.string IN ($names_str) AND tagmsv{$i}.string = $value)";
-				} else {
-					$values_where .= " OR (tagmsv.string = $value)";
-				}
-			} else {
-				$values_where .= "(tagmsv.string = $value)";
-			}				
-		}
-		$values_where .= ")";
-	}
-	
-	$access = get_access_sql_suffix('tagmd');
-	
-	if ($names_where && $values_where) {
-		$wheres[] = "($names_where AND $values_where AND $access)";
-	} elseif ($names_where) {
-		$wheres[] = "($names_where AND $access)";
-	} elseif ($values_where) {
-		$wheres[] = "($values_where AND $access)";
-	}
-
-  $options['joins'] = eligo_options_array_merge($options['joins'], $joins);
-  $options['wheres'] = eligo_options_array_merge($options['wheres'], $wheres);
+  if (count($values) == 1 || $andor == 'or') {
+    $options['metadata_names'] = array('tags');
+    $options['metadata_values'] = $values;
+  } else {
+    $options['metadata_name_value_pairs'] = array();
+    foreach ($values as $value) {
+      $options['metadata_name_value_pairs'][] = array('name' => 'tags', 'value' => $value, 'operand' => '=', 'case_sensitive' => true);
+    }
+  }
   
   return $options;
 }
-
 
 
 //

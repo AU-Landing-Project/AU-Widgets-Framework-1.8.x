@@ -23,7 +23,9 @@ $options = array(
     ),
 );
 
+/*
 echo "<div class=\"eligo_field\">";
 echo elgg_echo('eligo:tagfilter_andor:label') . "<br>";
 echo elgg_view('input/dropdown', $options);
 echo "</div>"; // /eligo_field
+*/
