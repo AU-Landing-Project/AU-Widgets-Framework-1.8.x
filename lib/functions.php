@@ -413,8 +413,13 @@ function eligo_upgrade_old_widget($widget){
       elseif($widget->BS_display_according_to == "arbit_display_friends".$widget->guid){
         $objectlist = "CS_arbit_display_friends";
       }
-      else{
+      elseif($widget->BS_display_according_to == "arbit_display_all".$widget->guid){
         $objectlist = "CS_arbit_display_all";
+      }
+      else {
+        // when in doubt...
+        // no owner option
+        $objectlist = "CS_arbit_display";
       }
       
       $widget->eligo_selected_entities = serialize(explode(",", $widget->$objectlist));
