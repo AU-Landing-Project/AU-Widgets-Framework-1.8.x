@@ -277,8 +277,11 @@ function eligo_get_owner_options($widget, $owners, $options){
     
     case 'thisgroup':
     case 'mine':
-    default:
       $options['container_guids'] = array($widget->owner_guid);
+      break;
+    default:
+      // should be a single numeric guid
+      $options['container_guids'] = array($owners);
     break;
   }
   
@@ -476,4 +479,40 @@ function eligo_widget_save_selected($hook, $type, $returnvalue, $params){
       $widget->eligo_selected_entities = serialize($entitylist);
     }
   }
+}
+
+
+
+// adds subgroups at each level recursively, for 5 levels
+function eligo_get_subgroups_as_owners($group, $user, $limit, $returnvalue = array(), $depth = 0) {
+  
+  if (!elgg_instanceof($group, 'group')) {
+    return $returnvalue;
+  }
+  
+  if (!elgg_instanceof($user, 'user')) {
+    return $returnvalue;
+  }
+  
+  $depth++;
+  
+  $children = au_subgroups_get_subgroups($group, 0, true);
+  
+  if (is_array($children) && count($children)) {
+    foreach ($children as $child) {
+      if ($child->isMember($user)) {
+        // it's a valid subgroup that we're a member of, add it to the access list
+        $label = '';
+        for ($i=0; $i<min($depth, $limit); $i++) {
+          $label .= '--';
+        }
+        $label .= $child->name;
+        unset($returnvalue[$child->guid]); //necessary because it may already be set in the wrong tree
+        $returnvalue[$child->guid] = $label;
+        $returnvalue = eligo_get_subgroups_as_owners($child, $user, $limit, $returnvalue, $depth);
+      }
+    }
+  }
+  
+  return $returnvalue;
 }
