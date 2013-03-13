@@ -5,7 +5,7 @@
  */
 
 $widget = $vars['entity'];
-$user = elgg_get_logged_in_user_entity();
+$container = $widget->getContainerEntity();
 
 $options_values = array(
   'mine' => elgg_echo('eligo:owners:mine'),
@@ -15,8 +15,8 @@ $options_values = array(
 );
 
 // get groups and add their acls to the options
-if($user && elgg_instanceof($user, 'user')){
-  $groups = $user->getGroups('', 0, 0);
+if($container && elgg_instanceof($container, 'user')){
+  $groups = $container->getGroups('', 0, 0);
     
   if($groups){
     foreach($groups as $group){
@@ -29,13 +29,17 @@ if($user && elgg_instanceof($user, 'user')){
         }
           
         $options_values[$group->guid] = elgg_echo('groups:group') . ": " . $group->name;
-        $options_values = eligo_get_subgroups_as_owners($group, $user, 5, $options_values);
+        $options_values = eligo_get_subgroups_as_owners($group, $container, 5, $options_values);
       }
       else {
         $options_values[$group->guid] = elgg_echo('groups:group') . ": " . $group->name;
       }
     }
   }
+}
+
+if ($vars['eligo_owners']) {
+  $options_values = array_filter(array_merge($options_values, $vars['eligo_owners']));
 }
 
 echo '<div class="eligo_field">';
