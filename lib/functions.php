@@ -239,6 +239,16 @@ function eligo_get_owner_options($widget, $owners, $options){
     case 'friends':
         // get a list of friend guids
         $user = get_user($widget->owner_guid);
+		if (!$user) {
+		  // try to get owner of the container
+		  $container = get_entity($widget->container_guid);
+		  $user = get_user($container->owner_guid);
+		  
+		  if (!$user) {
+			$options['subtypes'] = array('eligo_invalidate_query');
+			break;
+		  }
+		}
         $friends = $user->getFriends('',0,0);
         
         $friend_guids = array();
@@ -276,8 +286,20 @@ function eligo_get_owner_options($widget, $owners, $options){
     break;
     
     case 'thisgroup':
+	  $options['container_guids'] = array($widget->owner_guid);
     case 'mine':
-      $options['container_guids'] = array($widget->owner_guid);
+	  $user = get_user($widget->owner_guid);
+		if (!$user) {
+		  // try to get owner of the container
+		  $container = get_entity($widget->container_guid);
+		  $user = get_user($container->owner_guid);
+		  
+		  if (!$user) {
+			$options['subtypes'] = array('eligo_invalidate_query');
+			break;
+		  }
+		}
+      $options['container_guids'] = array($user->guid);
       break;
     default:
       // should be a single numeric guid
