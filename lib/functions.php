@@ -202,7 +202,6 @@ function eligo_get_owner_options($widget, $owners, $options){
     if(!is_array($options)){
       $options = array();
     }
-  
 	// if a widget has requirements beyond the default
 	// they can define their own owner options
 	if($widget->eligo_custom_owners_options && is_callable($widget->eligo_custom_owners_options)){
@@ -287,6 +286,7 @@ function eligo_get_owner_options($widget, $owners, $options){
     
     case 'thisgroup':
 	  $options['container_guids'] = array($widget->owner_guid);
+	  break;
     case 'mine':
 	  $user = get_user($widget->owner_guid);
 		if (!$user) {
