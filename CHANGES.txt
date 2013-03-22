@@ -2,6 +2,9 @@
 
 x.x:
 
+1.4 (03/22/2013):
+ - fixes bug in group content ownership setting
+
 1.3 (03/13/2013):
  - added configurable options through $vars in sortby and owners
  - Removed 'and' functionality for tag searches due to performance issues
